@@ -56,8 +56,6 @@ internal static class Program
         }
     }
 
-    private static readonly JsonSerializerOptions IndentedJsonOptions = new() { WriteIndented = true };
-
     private static int RunPackageVerification(string outputPath)
     {
         try
@@ -73,22 +71,22 @@ internal static class Program
             var testSettings = new AppSettings();
             var json = JsonSerializer.Serialize(testSettings, BaudrJsonContext.Default.AppSettings);
 
-            var report = new
+            var report = new PackageVerificationReport
             {
-                status = "passed",
-                application = "Baudr",
-                version = ver,
-                informationalVersion = infoVer,
-                os = RuntimeInformation.OSDescription,
-                architecture = RuntimeInformation.OSArchitecture.ToString(),
-                framework = RuntimeInformation.FrameworkDescription,
-                isAot = !System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported,
-                detectedPortsCount = ports.Count,
-                settingsSerializationSuccess = !string.IsNullOrEmpty(json),
-                timestamp = DateTimeOffset.UtcNow.ToString("o", CultureInfo.InvariantCulture)
+                Status = "passed",
+                Application = "Baudr",
+                Version = ver,
+                InformationalVersion = infoVer,
+                Os = RuntimeInformation.OSDescription,
+                Architecture = RuntimeInformation.OSArchitecture.ToString(),
+                Framework = RuntimeInformation.FrameworkDescription,
+                IsAot = !System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported,
+                DetectedPortsCount = ports.Count,
+                SettingsSerializationSuccess = !string.IsNullOrEmpty(json),
+                Timestamp = DateTimeOffset.UtcNow.ToString("o", CultureInfo.InvariantCulture)
             };
 
-            var reportJson = JsonSerializer.Serialize(report, IndentedJsonOptions);
+            var reportJson = JsonSerializer.Serialize(report, BaudrJsonContext.Default.PackageVerificationReport);
 
             var dir = Path.GetDirectoryName(outputPath);
             if (!string.IsNullOrEmpty(dir))
@@ -105,13 +103,13 @@ internal static class Program
             Console.Error.WriteLine($"Package verification failed: {ex}");
             try
             {
-                var errorReport = new
+                var errorReport = new PackageVerificationErrorReport
                 {
-                    status = "failed",
-                    error = ex.ToString(),
-                    timestamp = DateTimeOffset.UtcNow.ToString("o", CultureInfo.InvariantCulture)
+                    Status = "failed",
+                    Error = ex.ToString(),
+                    Timestamp = DateTimeOffset.UtcNow.ToString("o", CultureInfo.InvariantCulture)
                 };
-                File.WriteAllText(outputPath, JsonSerializer.Serialize(errorReport));
+                File.WriteAllText(outputPath, JsonSerializer.Serialize(errorReport, BaudrJsonContext.Default.PackageVerificationErrorReport));
             }
             catch
             {

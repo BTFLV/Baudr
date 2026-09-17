@@ -12,6 +12,8 @@ namespace Baudr.Infrastructure.Persistence;
 [JsonSerializable(typeof(SavedCommand))]
 [JsonSerializable(typeof(HighlightRule))]
 [JsonSerializable(typeof(SerialPortConfig))]
+[JsonSerializable(typeof(PackageVerificationReport))]
+[JsonSerializable(typeof(PackageVerificationErrorReport))]
 public partial class BaudrJsonContext : JsonSerializerContext
 {
 }
