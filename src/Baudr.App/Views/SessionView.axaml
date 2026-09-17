@@ -1,0 +1,462 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Baudr.App.ViewModels"
+             xmlns:controls="using:Baudr.App.Controls"
+             xmlns:models="using:Baudr.Core.Models"
+             x:Class="Baudr.App.Views.SessionView"
+             x:DataType="vm:SessionViewModel">
+
+  <Grid RowDefinitions="Auto,*,Auto,Auto">
+    <!-- 1. Connection Toolbar -->
+    <Border Grid.Row="0" 
+            Background="{DynamicResource ThemeSurfaceBrush}" 
+            BorderBrush="{DynamicResource ThemeBorderSubtleBrush}" 
+            BorderThickness="0,0,0,1" 
+            Padding="8,6">
+      <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,*,Auto">
+        <!-- Port Dropdown & Refresh -->
+        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+          <ComboBox ItemsSource="{Binding AvailablePorts}"
+                    SelectedItem="{Binding SelectedPortInfo}"
+                    Width="160"
+                    PlaceholderText="Select Port">
+            <ComboBox.ItemTemplate>
+              <DataTemplate x:DataType="models:SerialPortInfo">
+                <TextBlock Text="{Binding DisplayName}" />
+              </DataTemplate>
+            </ComboBox.ItemTemplate>
+          </ComboBox>
+          <Button Classes="icon" Command="{Binding RefreshPortsCommand}" ToolTip.Tip="Refresh Ports">
+            <PathIcon Data="{StaticResource IconRefresh}" Width="14" Height="14" Foreground="{DynamicResource ThemeForegroundBrush}" />
+          </Button>
+        </StackPanel>
+
+        <!-- Baud Rate Selector -->
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" Margin="8,0,0,0" VerticalAlignment="Center">
+          <ComboBox ItemsSource="{Binding StandardBaudRates}"
+                    SelectedItem="{Binding BaudRate}"
+                    Width="105" />
+        </StackPanel>
+
+        <!-- Advanced Framing Popover Button -->
+        <Button Grid.Column="2" Classes="toolbar" Margin="6,0,0,0" VerticalAlignment="Center" ToolTip.Tip="Serial Framing Settings">
+          <StackPanel Orientation="Horizontal" Spacing="4">
+            <TextBlock Text="8-N-1" FontSize="11" VerticalAlignment="Center" />
+            <PathIcon Data="{StaticResource IconDown}" Width="10" Height="10" />
+          </StackPanel>
+          <Button.Flyout>
+            <Flyout Placement="BottomEdgeAlignedLeft">
+              <Border Background="{DynamicResource ThemeSurfaceBrush}" Padding="12" Width="260">
+                <StackPanel Spacing="10">
+                  <TextBlock Text="Serial Configuration" FontWeight="SemiBold" FontSize="12" />
+                  
+                  <Grid ColumnDefinitions="80,*" RowDefinitions="Auto,Auto,Auto,Auto" Margin="0,4,0,0">
+                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Data Bits:" VerticalAlignment="Center" FontSize="11" />
+                    <ComboBox Grid.Row="0" Grid.Column="1" SelectedItem="{Binding DataBits}" Margin="0,2">
+                      <x:Int32>5</x:Int32>
+                      <x:Int32>6</x:Int32>
+                      <x:Int32>7</x:Int32>
+                      <x:Int32>8</x:Int32>
+                    </ComboBox>
+
+                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Parity:" VerticalAlignment="Center" FontSize="11" />
+                    <ComboBox Grid.Row="1" Grid.Column="1" SelectedItem="{Binding Parity}" Margin="0,2">
+                      <models:SerialParity>None</models:SerialParity>
+                      <models:SerialParity>Odd</models:SerialParity>
+                      <models:SerialParity>Even</models:SerialParity>
+                      <models:SerialParity>Mark</models:SerialParity>
+                      <models:SerialParity>Space</models:SerialParity>
+                    </ComboBox>
+
+                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Stop Bits:" VerticalAlignment="Center" FontSize="11" />
+                    <ComboBox Grid.Row="2" Grid.Column="1" SelectedItem="{Binding StopBits}" Margin="0,2">
+                      <models:SerialStopBits>One</models:SerialStopBits>
+                      <models:SerialStopBits>OnePointFive</models:SerialStopBits>
+                      <models:SerialStopBits>Two</models:SerialStopBits>
+                    </ComboBox>
+
+                    <TextBlock Grid.Row="3" Grid.Column="0" Text="Flow Ctrl:" VerticalAlignment="Center" FontSize="11" />
+                    <ComboBox Grid.Row="3" Grid.Column="1" SelectedItem="{Binding Handshake}" Margin="0,2">
+                      <models:SerialHandshake>None</models:SerialHandshake>
+                      <models:SerialHandshake>RequestToSend</models:SerialHandshake>
+                      <models:SerialHandshake>XOnXOff</models:SerialHandshake>
+                    </ComboBox>
+                  </Grid>
+
+                  <CheckBox Content="Auto-reconnect on device drop" IsChecked="{Binding AutoReconnect}" FontSize="11" />
+                </StackPanel>
+              </Border>
+            </Flyout>
+          </Button.Flyout>
+        </Button>
+
+        <!-- Connect / Disconnect Action Button -->
+        <Panel Grid.Column="3" Margin="10,0,0,0" VerticalAlignment="Center">
+          <Button Classes="primary"
+                  Content="Connect"
+                  Command="{Binding ConnectCommand}"
+                  IsVisible="{Binding State, Converter={x:Static ObjectConverters.NotEqual}, ConverterParameter={x:Static models:ConnectionState.Connected}}" />
+          <Button Classes="danger"
+                  Content="Disconnect"
+                  Command="{Binding DisconnectCommand}"
+                  IsVisible="{Binding State, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static models:ConnectionState.Connected}}" />
+        </Panel>
+
+        <!-- Connection Status Indicator Pill -->
+        <Border Grid.Column="4" 
+                Margin="12,0,0,0" 
+                Background="{DynamicResource ThemeBackgroundBrush}" 
+                BorderBrush="{DynamicResource ThemeBorderSubtleBrush}" 
+                BorderThickness="1" 
+                CornerRadius="12" 
+                Padding="8,3" 
+                VerticalAlignment="Center">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <Ellipse Width="8" Height="8" VerticalAlignment="Center">
+              <Ellipse.Fill>
+                <SolidColorBrush Color="#10B981" />
+              </Ellipse.Fill>
+            </Ellipse>
+            <TextBlock Text="{Binding StatusMessage}" FontSize="11" Foreground="{DynamicResource ThemeMutedBrush}" VerticalAlignment="Center" />
+          </StackPanel>
+        </Border>
+
+        <!-- Right Quick Action Toggles -->
+        <StackPanel Grid.Column="6" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+          <!-- Search toggle -->
+          <ToggleButton Classes="toolbar" IsChecked="{Binding IsSearchVisible}" ToolTip.Tip="Find in Terminal (Ctrl+F)">
+            <PathIcon Data="{StaticResource IconSearch}" Width="13" Height="13" />
+          </ToggleButton>
+
+          <!-- Hex view toggle -->
+          <Button Classes="toolbar" 
+                  Command="{Binding $parent[UserControl].((vm:SessionViewModel)DataContext).TogglePlotterCommand}" 
+                  ToolTip.Tip="Toggle Serial Plotter">
+            <PathIcon Data="{StaticResource IconPlotter}" Width="13" Height="13" Foreground="{DynamicResource ThemeForegroundBrush}" />
+          </Button>
+
+          <!-- Inspector toggle -->
+          <Button Classes="toolbar" 
+                  Command="{Binding $parent[UserControl].((vm:SessionViewModel)DataContext).ToggleInspectorCommand}" 
+                  ToolTip.Tip="Toggle Packet Inspector">
+            <PathIcon Data="{StaticResource IconInspector}" Width="13" Height="13" Foreground="{DynamicResource ThemeForegroundBrush}" />
+          </Button>
+
+          <!-- Clear Terminal -->
+          <Button Classes="toolbar" Command="{Binding ClearTerminalCommand}" ToolTip.Tip="Clear Terminal (Ctrl+L)">
+            <PathIcon Data="{StaticResource IconClear}" Width="13" Height="13" Foreground="{DynamicResource ThemeForegroundBrush}" />
+          </Button>
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <!-- 2. Central Workspace (Terminal + Collapsible Panels) -->
+    <Grid Grid.Row="1" ColumnDefinitions="*,Auto,Auto">
+      <!-- Main Terminal Area -->
+      <Grid Grid.Column="0">
+        <!-- Virtualized Terminal + ScrollBar -->
+        <Grid ColumnDefinitions="*,Auto">
+          <controls:TerminalControl x:Name="TermControl"
+                                    Grid.Column="0"
+                                    Buffer="{Binding TerminalBuffer}"
+                                    TerminalFontSize="{Binding TerminalFontSize}"
+                                    ShowLineNumbers="{Binding ShowLineNumbers}"
+                                    TimestampDisplayMode="{Binding TimestampDisplayMode}"
+                                    ActiveSearchResult="{Binding CurrentSearchResult}" />
+          <ScrollBar x:Name="TermScrollBar"
+                     Grid.Column="1"
+                     Orientation="Vertical" />
+        </Grid>
+
+        <!-- Floating Jump to Latest Button -->
+        <Border HorizontalAlignment="Right" 
+                VerticalAlignment="Bottom" 
+                Margin="0,0,24,16" 
+                Background="{DynamicResource AccentBrush}" 
+                CornerRadius="16" 
+                Padding="12,6" 
+                Cursor="Hand"
+                IsVisible="{Binding UnreadLinesCount, Converter={x:Static ObjectConverters.NotEqual}, ConverterParameter=0}">
+          <Button Classes="icon" 
+                  Command="{Binding #TermControl.ScrollToBottom}" 
+                  Foreground="#FFFFFF" 
+                  Padding="0">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <PathIcon Data="{StaticResource IconDown}" Width="12" Height="12" Foreground="#FFFFFF" />
+              <TextBlock Text="{Binding UnreadLinesCount, StringFormat='Jump to latest ({0})'}" 
+                         FontWeight="SemiBold" 
+                         FontSize="11" 
+                         Foreground="#FFFFFF" />
+            </StackPanel>
+          </Button>
+        </Border>
+
+        <!-- Floating Search Overlay -->
+        <Border HorizontalAlignment="Right" 
+                VerticalAlignment="Top" 
+                Margin="0,8,20,0" 
+                Background="{DynamicResource ThemeSurfaceBrush}" 
+                BorderBrush="{DynamicResource ThemeBorderBrush}" 
+                BorderThickness="1" 
+                CornerRadius="6" 
+                Padding="8" 
+                BoxShadow="0 4 12 #40000000"
+                IsVisible="{Binding IsSearchVisible}">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <TextBox Text="{Binding SearchPattern}" 
+                     PlaceholderText="Search terminal..." 
+                     Width="200" 
+                     Height="28" 
+                     FontSize="11" />
+            <Button Classes="toolbar" Command="{Binding PrevSearchMatchCommand}" ToolTip.Tip="Previous (Shift+F3)">
+              <PathIcon Data="{StaticResource IconUp}" Width="10" Height="10" />
+            </Button>
+            <Button Classes="toolbar" Command="{Binding NextSearchMatchCommand}" ToolTip.Tip="Next (F3)">
+              <PathIcon Data="{StaticResource IconDown}" Width="10" Height="10" />
+            </Button>
+            <TextBlock Text="{Binding SearchMatchSummary}" 
+                       FontSize="11" 
+                       Foreground="{DynamicResource ThemeMutedBrush}" 
+                       VerticalAlignment="Center" 
+                       Margin="4,0" />
+            <Button Classes="icon" Command="{Binding ToggleSearchCommand}" ToolTip.Tip="Close (Esc)">
+              <PathIcon Data="{StaticResource IconClose}" Width="12" Height="12" />
+            </Button>
+          </StackPanel>
+        </Border>
+      </Grid>
+
+      <!-- Plotter Panel (Collapsible) -->
+      <Border Grid.Column="1" 
+              Width="380" 
+              Background="{DynamicResource ThemeSurfaceBrush}" 
+              BorderBrush="{DynamicResource ThemeBorderSubtleBrush}" 
+              BorderThickness="1,0,0,0"
+              IsVisible="{Binding IsPlotterVisible}">
+        <Grid RowDefinitions="Auto,*,Auto">
+          <!-- Plotter Header -->
+          <Border Grid.Row="0" Padding="10,8" BorderBrush="{DynamicResource ThemeBorderSubtleBrush}" BorderThickness="0,0,0,1">
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock Grid.Column="0" Text="Serial Plotter" FontWeight="SemiBold" FontSize="12" VerticalAlignment="Center" />
+              <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
+                <Button Classes="icon" Command="{Binding TogglePlotPauseCommand}" ToolTip.Tip="Pause / Resume Plot">
+                  <PathIcon Data="{StaticResource IconPause}" Width="12" Height="12" />
+                </Button>
+                <Button Classes="icon" Command="{Binding ClearPlotCommand}" ToolTip.Tip="Clear Chart">
+                  <PathIcon Data="{StaticResource IconClear}" Width="12" Height="12" />
+                </Button>
+                <Button Classes="icon" Command="{Binding TogglePlotterCommand}" ToolTip.Tip="Close Plotter">
+                  <PathIcon Data="{StaticResource IconClose}" Width="12" Height="12" />
+                </Button>
+              </StackPanel>
+            </Grid>
+          </Border>
+
+          <!-- Plotter Canvas -->
+          <controls:PlotterControl Grid.Row="1" 
+                                   SeriesCollection="{Binding PlotSeries}" 
+                                   Margin="6" />
+
+          <!-- Plotter Legend -->
+          <Border Grid.Row="2" Padding="8" BorderBrush="{DynamicResource ThemeBorderSubtleBrush}" BorderThickness="0,1,0,0" MaxHeight="90">
+            <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+              <ItemsControl ItemsSource="{Binding PlotSeries}">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <WrapPanel Orientation="Horizontal" />
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="models:PlotSeries">
+                    <CheckBox IsChecked="{Binding IsVisible}" Margin="4,2" FontSize="11">
+                      <StackPanel Orientation="Horizontal" Spacing="4">
+                        <TextBlock Text="{Binding Name}" />
+                        <TextBlock Text="{Binding LatestValue, StringFormat=': {0:F1}'}" Foreground="{DynamicResource ThemeMutedBrush}" />
+                      </StackPanel>
+                    </CheckBox>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </ScrollViewer>
+          </Border>
+        </Grid>
+      </Border>
+
+      <!-- Packet Inspector Panel (Collapsible) -->
+      <Border Grid.Column="2" 
+              Width="280" 
+              Background="{DynamicResource ThemeSurfaceBrush}" 
+              BorderBrush="{DynamicResource ThemeBorderSubtleBrush}" 
+              BorderThickness="1,0,0,0"
+              IsVisible="{Binding IsInspectorVisible}">
+        <Grid RowDefinitions="Auto,*">
+          <Border Grid.Row="0" Padding="10,8" BorderBrush="{DynamicResource ThemeBorderSubtleBrush}" BorderThickness="0,0,0,1">
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock Grid.Column="0" Text="Packet Inspector" FontWeight="SemiBold" FontSize="12" VerticalAlignment="Center" />
+              <Button Grid.Column="1" Classes="icon" Command="{Binding ToggleInspectorCommand}">
+                <PathIcon Data="{StaticResource IconClose}" Width="12" Height="12" />
+              </Button>
+            </Grid>
+          </Border>
+
+          <ScrollViewer Grid.Row="1" Padding="10">
+            <StackPanel Spacing="8">
+              <TextBlock Text="Select bytes in terminal to decode multi-byte binary protocols." 
+                         FontSize="11" 
+                         Foreground="{DynamicResource ThemeMutedBrush}" 
+                         TextWrapping="Wrap" />
+
+              <Border Background="{DynamicResource ThemeBackgroundBrush}" CornerRadius="4" Padding="8">
+                <Grid ColumnDefinitions="70,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
+                  <TextBlock Grid.Row="0" Grid.Column="0" Text="Length:" FontSize="11" Foreground="{DynamicResource ThemeMutedBrush}" />
+                  <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding PacketInterpretation.Length, FallbackValue='0'}" FontSize="11" />
+
+                  <TextBlock Grid.Row="1" Grid.Column="0" Text="Hex:" FontSize="11" Foreground="{DynamicResource ThemeMutedBrush}" />
+                  <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding PacketInterpretation.HexString, FallbackValue='--'}" FontSize="11" />
+
+                  <TextBlock Grid.Row="2" Grid.Column="0" Text="UInt8:" FontSize="11" Foreground="{DynamicResource ThemeMutedBrush}" />
+                  <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding PacketInterpretation.UInt8, FallbackValue='--'}" FontSize="11" />
+
+                  <TextBlock Grid.Row="3" Grid.Column="0" Text="Int8:" FontSize="11" Foreground="{DynamicResource ThemeMutedBrush}" />
+                  <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding PacketInterpretation.Int8, FallbackValue='--'}" FontSize="11" />
+
+                  <TextBlock Grid.Row="4" Grid.Column="0" Text="UInt16 LE:" FontSize="11" Foreground="{DynamicResource ThemeMutedBrush}" />
+                  <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding PacketInterpretation.UInt16LE, FallbackValue='--'}" FontSize="11" />
+
+                  <TextBlock Grid.Row="5" Grid.Column="0" Text="Int16 LE:" FontSize="11" Foreground="{DynamicResource ThemeMutedBrush}" />
+                  <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding PacketInterpretation.Int16LE, FallbackValue='--'}" FontSize="11" />
+
+                  <TextBlock Grid.Row="6" Grid.Column="0" Text="UInt32 LE:" FontSize="11" Foreground="{DynamicResource ThemeMutedBrush}" />
+                  <TextBlock Grid.Row="6" Grid.Column="1" Text="{Binding PacketInterpretation.UInt32LE, FallbackValue='--'}" FontSize="11" />
+
+                  <TextBlock Grid.Row="7" Grid.Column="0" Text="Float32 LE:" FontSize="11" Foreground="{DynamicResource ThemeMutedBrush}" />
+                  <TextBlock Grid.Row="7" Grid.Column="1" Text="{Binding PacketInterpretation.Float32LE, FallbackValue='--'}" FontSize="11" />
+
+                  <TextBlock Grid.Row="8" Grid.Column="0" Text="ASCII:" FontSize="11" Foreground="{DynamicResource ThemeMutedBrush}" />
+                  <TextBlock Grid.Row="8" Grid.Column="1" Text="{Binding PacketInterpretation.AsciiString, FallbackValue='--'}" FontSize="11" />
+                </Grid>
+              </Border>
+            </StackPanel>
+          </ScrollViewer>
+        </Grid>
+      </Border>
+    </Grid>
+
+    <!-- 3. Send Composer -->
+    <Border Grid.Row="2" 
+            Background="{DynamicResource ThemeSurfaceBrush}" 
+            BorderBrush="{DynamicResource ThemeBorderSubtleBrush}" 
+            BorderThickness="0,1,0,0" 
+            Padding="8,6">
+      <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto">
+        <!-- Mode Toggle (Text / Hex) -->
+        <ComboBox Grid.Column="0" 
+                  SelectedItem="{Binding SendMode}" 
+                  Width="80" 
+                  Margin="0,0,6,0">
+          <models:SendMode>Text</models:SendMode>
+          <models:SendMode>Hex</models:SendMode>
+        </ComboBox>
+
+        <!-- Line Ending Picker -->
+        <ComboBox Grid.Column="1" 
+                  SelectedItem="{Binding SelectedLineEnding}" 
+                  Width="85" 
+                  Margin="0,0,6,0">
+          <models:LineEnding>CrLf</models:LineEnding>
+          <models:LineEnding>Lf</models:LineEnding>
+          <models:LineEnding>Cr</models:LineEnding>
+          <models:LineEnding>None</models:LineEnding>
+        </ComboBox>
+
+        <!-- Main Input Field -->
+        <TextBox Grid.Column="2" 
+                 Text="{Binding InputText}" 
+                 PlaceholderText="Type command or hex (e.g. 01 FF A0)..." 
+                 MinHeight="32" 
+                 VerticalContentAlignment="Center" 
+                 FontFamily="Cascadia Code, Consolas, monospace" />
+
+        <!-- Send Button -->
+        <Button Grid.Column="3" 
+                Classes="primary" 
+                Command="{Binding SendCommand}" 
+                Margin="6,0,0,0" 
+                ToolTip.Tip="Send (Enter / Ctrl+Enter)">
+          <StackPanel Orientation="Horizontal" Spacing="4">
+            <PathIcon Data="{StaticResource IconSend}" Width="12" Height="12" Foreground="#FFFFFF" />
+            <TextBlock Text="Send" FontWeight="SemiBold" FontSize="12" />
+          </StackPanel>
+        </Button>
+
+        <!-- Send Options (Repeat & History) -->
+        <Button Grid.Column="4" Classes="toolbar" Margin="4,0,0,0" ToolTip.Tip="Send Options">
+          <PathIcon Data="{StaticResource IconDown}" Width="10" Height="10" />
+          <Button.Flyout>
+            <Flyout Placement="TopEdgeAlignedRight">
+              <Border Background="{DynamicResource ThemeSurfaceBrush}" Padding="12" Width="220">
+                <StackPanel Spacing="8">
+                  <TextBlock Text="Send Settings" FontWeight="SemiBold" FontSize="12" />
+                  <CheckBox Content="Clear input after send" IsChecked="{Binding ClearAfterSend}" FontSize="11" />
+                  <CheckBox Content="Local echo" IsChecked="{Binding LocalEcho}" FontSize="11" />
+
+                  <Separator Background="{DynamicResource ThemeBorderSubtleBrush}" />
+                  <TextBlock Text="Auto Repeat" FontWeight="SemiBold" FontSize="11" />
+                  <Grid ColumnDefinitions="*,60">
+                    <TextBlock Grid.Column="0" Text="Interval (ms):" VerticalAlignment="Center" FontSize="11" />
+                    <TextBox Grid.Column="1" Text="{Binding RepeatIntervalMs}" FontSize="11" Height="24" />
+                  </Grid>
+                  <CheckBox Content="Repeat continuously" IsChecked="{Binding ContinuousRepeat}" FontSize="11" />
+                  <Button Classes="toolbar" 
+                          Content="Start Repeat" 
+                          Command="{Binding StartRepeatCommand}" 
+                          IsVisible="{Binding !IsRepeating}" />
+                  <Button Classes="danger" 
+                          Content="Stop Repeat" 
+                          Command="{Binding StopRepeatCommand}" 
+                          IsVisible="{Binding IsRepeating}" />
+                </StackPanel>
+              </Border>
+            </Flyout>
+          </Button.Flyout>
+        </Button>
+      </Grid>
+    </Border>
+
+    <!-- 4. Compact Status Bar -->
+    <Border Grid.Row="3" 
+            Background="{DynamicResource ThemeBackgroundBrush}" 
+            BorderBrush="{DynamicResource ThemeBorderSubtleBrush}" 
+            BorderThickness="0,1,0,0" 
+            Padding="8,3">
+      <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto">
+        <!-- Status & Mode -->
+        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+          <TextBlock Text="{Binding State}" FontWeight="SemiBold" FontSize="11" Classes="status" />
+          <TextBlock Text="{Binding RxBytesFormatted, StringFormat='RX: {0}'}" FontSize="11" Classes="status" Foreground="{DynamicResource RxBrush}" />
+          <TextBlock Text="{Binding TxBytesFormatted, StringFormat='TX: {0}'}" FontSize="11" Classes="status" Foreground="{DynamicResource TxBrush}" />
+          <TextBlock Text="{Binding RxRateFormatted}" FontSize="11" Classes="status" />
+        </StackPanel>
+
+        <!-- Modem Control Lines (CTS, DSR, CD, DTR, RTS) -->
+        <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="6" Margin="0,0,16,0" VerticalAlignment="Center">
+          <TextBlock Text="CTS" FontSize="10" FontWeight="Bold" Opacity="{Binding CtsSignal, Converter={x:Static ObjectConverters.NotEqual}, ConverterParameter=false}" VerticalAlignment="Center" />
+          <TextBlock Text="DSR" FontSize="10" FontWeight="Bold" Opacity="{Binding DsrSignal, Converter={x:Static ObjectConverters.NotEqual}, ConverterParameter=false}" VerticalAlignment="Center" />
+          <TextBlock Text="CD" FontSize="10" FontWeight="Bold" Opacity="{Binding CdSignal, Converter={x:Static ObjectConverters.NotEqual}, ConverterParameter=false}" VerticalAlignment="Center" />
+
+          <ToggleButton Classes="toolbar" IsChecked="{Binding DtrEnable}" Padding="4,2" FontSize="10" Content="DTR" ToolTip.Tip="Toggle DTR Line" />
+          <ToggleButton Classes="toolbar" IsChecked="{Binding RtsEnable}" Padding="4,2" FontSize="10" Content="RTS" ToolTip.Tip="Toggle RTS Line" />
+          <Button Classes="toolbar" Command="{Binding SendBreakCommand}" Padding="4,2" FontSize="10" Content="BREAK" ToolTip.Tip="Send Break Signal" />
+        </StackPanel>
+
+        <!-- Uptime / Duration -->
+        <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+          <TextBlock Text="{Binding UptimeFormatted}" FontSize="11" Classes="status" />
+          <Button Classes="icon" Command="{Binding ResetStatisticsCommand}" ToolTip.Tip="Reset Counters">
+            <PathIcon Data="{StaticResource IconRefresh}" Width="10" Height="10" Foreground="{DynamicResource ThemeMutedBrush}" />
+          </Button>
+        </StackPanel>
+      </Grid>
+    </Border>
+  </Grid>
+</UserControl>

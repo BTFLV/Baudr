@@ -1,0 +1,203 @@
+name: Build and Release
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+  workflow_dispatch:
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # 1. VERIFY: Compile and Test on all supported operating systems
+  # ---------------------------------------------------------------------------
+  verify:
+    name: Verify (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore Baudr.slnx
+
+      - name: Build Release
+        run: dotnet build Baudr.slnx -c Release --no-restore
+
+      - name: Run Tests
+        run: dotnet test Baudr.slnx -c Release --no-build --verbosity normal
+
+  # ---------------------------------------------------------------------------
+  # 2. PACKAGE: Matrix publishing with Native AOT and sanity checks
+  # ---------------------------------------------------------------------------
+  package:
+    name: Package (${{ matrix.rid }})
+    needs: verify
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - rid: win-x64
+            os: windows-latest
+            script: powershell -ExecutionPolicy Bypass -File scripts/package-windows.ps1 -Configuration Release -PublishAot true -OutputDir artifacts
+            artifact_name: Baudr-win-x64.zip
+          - rid: osx-arm64
+            os: macos-latest
+            script: bash scripts/package-macos.sh osx-arm64 Release true artifacts
+            artifact_name: Baudr-osx-arm64.zip
+          - rid: osx-x64
+            os: macos-13
+            script: bash scripts/package-macos.sh osx-x64 Release true artifacts
+            artifact_name: Baudr-osx-x64.zip
+          - rid: linux-x64
+            os: ubuntu-latest
+            script: bash scripts/package-linux.sh linux-x64 Release true artifacts
+            artifact_name: Baudr-linux-x64.zip
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      # Linux AOT dependencies
+      - name: Install Linux Native Toolchain
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang zlib1g-dev libkrb5-dev
+
+      - name: Execute Packaging Script
+        run: ${{ matrix.script }}
+
+      - name: Upload Package Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: artifacts/${{ matrix.artifact_name }}
+          if-no-files-found: error
+
+  # ---------------------------------------------------------------------------
+  # 3. RELEASE: Atomically update the rolling release 'current'
+  # ---------------------------------------------------------------------------
+  release:
+    name: Update Rolling Release
+    needs: package
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download all package artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release_assets
+          merge-multiple: true
+
+      - name: Validate All Expected Packages Exist and Are Non-Empty
+        run: |
+          echo "Verifying downloaded artifacts:"
+          ls -lh release_assets/
+          
+          EXPECTED=(
+            "Baudr-win-x64.zip"
+            "Baudr-osx-arm64.zip"
+            "Baudr-osx-x64.zip"
+            "Baudr-linux-x64.zip"
+          )
+          
+          for pkg in "${EXPECTED[@]}"; do
+            if [ ! -s "release_assets/$pkg" ]; then
+              echo "Error: Missing or empty expected package release_assets/$pkg"
+              exit 1
+            fi
+            echo "✓ Verified release_assets/$pkg ($(du -h "release_assets/$pkg" | cut -f1))"
+          done
+
+      - name: Race Protection Check
+        run: |
+          git fetch origin tag current --no-tags || true
+          if git rev-parse -q --verify "refs/tags/current" >/dev/null; then
+            CURRENT_TAG_COMMIT=$(git rev-parse refs/tags/current)
+            HEAD_COMMIT=$(git rev-parse HEAD)
+            echo "Current tag commit: $CURRENT_TAG_COMMIT"
+            echo "Target HEAD commit: $HEAD_COMMIT"
+            
+            if ! git merge-base --is-ancestor "$CURRENT_TAG_COMMIT" "$HEAD_COMMIT"; then
+              echo "Error: Refusing to overwrite 'current' release because current tag commit ($CURRENT_TAG_COMMIT) is not an ancestor of HEAD ($HEAD_COMMIT)."
+              exit 1
+            fi
+            echo "✓ Race protection check passed: HEAD is a descendant of the tagged commit."
+          else
+            echo "Tag 'current' does not exist yet; creating initial release."
+          fi
+
+      - name: Generate Release Notes
+        run: |
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          cat <<EOF > release_notes.md
+          # Current Baudr Build
+
+          This is the latest rolling development release of **Baudr** built directly from \`main\`.
+
+          - **Commit:** [\`${SHORT_SHA}\`](https://github.com/${{ github.repository }}/commit/${{ github.sha }})
+          - **Workflow Run:** [#${{ github.run_number }}](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          - **Build Date:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+
+          ### Available Binaries
+          * **Windows (x64):** \`Baudr-win-x64.zip\` (Self-contained, Native AOT)
+          * **macOS Apple Silicon (arm64):** \`Baudr-osx-arm64.zip\` (Baudr.app bundle)
+          * **macOS Intel (x64):** \`Baudr-osx-x64.zip\` (Baudr.app bundle)
+          * **Linux (x64):** \`Baudr-linux-x64.zip\` (Directly executable)
+
+          > [!NOTE]
+          > **No separate .NET runtime required**: All packages are self-contained and precompiled for optimal speed and minimal memory footprint.
+          > macOS builds are ad-hoc signed for development.
+          EOF
+
+      - name: Publish or Update Rolling GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Check if release already exists
+          if gh release view current >/dev/null 2>&1; then
+            echo "Updating existing 'current' release..."
+            gh release upload current --clobber release_assets/*.zip
+            gh release edit current --title "Current Baudr Build" --notes-file release_notes.md --draft=false
+          else
+            echo "Creating initial 'current' release..."
+            gh release create current \
+              --title "Current Baudr Build" \
+              --notes-file release_notes.md \
+              --clobber \
+              release_assets/*.zip
+          fi
+
+          # Update git tag to current commit
+          echo "Updating git tag 'current'..."
+          git tag -f current HEAD
+          git push -f origin current
+          echo "✓ Successfully updated rolling release and tag."
+

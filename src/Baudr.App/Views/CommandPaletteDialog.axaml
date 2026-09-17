@@ -1,0 +1,81 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Baudr.App.ViewModels"
+             x:Class="Baudr.App.Views.CommandPaletteDialog"
+             x:DataType="vm:CommandPaletteViewModel">
+
+  <!-- Modal backdrop -->
+  <Panel Background="#60000000">
+    <Border HorizontalAlignment="Center" 
+            VerticalAlignment="Top" 
+            Margin="0,100,0,0" 
+            Width="560" 
+            MaxHeight="450" 
+            Background="{DynamicResource ThemeSurfaceBrush}" 
+            BorderBrush="{DynamicResource ThemeBorderBrush}" 
+            BorderThickness="1" 
+            CornerRadius="10" 
+            BoxShadow="0 16 32 #50000000">
+      <Grid RowDefinitions="Auto,*">
+        <!-- Search Input Bar -->
+        <Border Grid.Row="0" Padding="12" BorderBrush="{DynamicResource ThemeBorderSubtleBrush}" BorderThickness="0,0,0,1">
+          <Grid ColumnDefinitions="Auto,*">
+            <PathIcon Grid.Column="0" Data="{StaticResource IconSearch}" Width="16" Height="16" Margin="0,0,10,0" Foreground="{DynamicResource ThemeMutedBrush}" VerticalAlignment="Center" />
+            <TextBox x:Name="SearchBox"
+                     Grid.Column="1" 
+                     Text="{Binding FilterQuery}" 
+                     PlaceholderText="Type a command or search actions..." 
+                     BorderThickness="0" 
+                     Background="Transparent" 
+                     FontSize="14" 
+                     VerticalContentAlignment="Center" />
+          </Grid>
+        </Border>
+
+        <!-- Matching Commands List -->
+        <ListBox Grid.Row="1" 
+                 ItemsSource="{Binding FilteredActions}" 
+                 SelectedItem="{Binding SelectedAction}" 
+                 Background="Transparent" 
+                 MaxHeight="360" 
+                 Padding="4">
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="vm:PaletteAction">
+              <Border Padding="10,8" CornerRadius="6">
+                <Grid ColumnDefinitions="Auto,*,Auto">
+                  <!-- Category Badge -->
+                  <Border Grid.Column="0" 
+                          Background="{DynamicResource ThemeCardBrush}" 
+                          CornerRadius="4" 
+                          Padding="6,2" 
+                          Margin="0,0,10,0" 
+                          VerticalAlignment="Center">
+                    <TextBlock Text="{Binding Category}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource ThemeMutedBrush}" />
+                  </Border>
+
+                  <!-- Title and Subtitle -->
+                  <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="SemiBold" />
+                    <TextBlock Text="{Binding Subtitle}" FontSize="11" Foreground="{DynamicResource ThemeMutedBrush}" IsVisible="{Binding Subtitle, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                  </StackPanel>
+
+                  <!-- Shortcut key badge -->
+                  <Border Grid.Column="2" 
+                          Background="{DynamicResource ThemeBackgroundBrush}" 
+                          BorderBrush="{DynamicResource ThemeBorderSubtleBrush}" 
+                          BorderThickness="1" 
+                          CornerRadius="4" 
+                          Padding="6,2" 
+                          VerticalAlignment="Center" 
+                          IsVisible="{Binding Shortcut, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                    <TextBlock Text="{Binding Shortcut}" FontSize="10" FontFamily="Cascadia Code, Consolas, monospace" Foreground="{DynamicResource ThemeMutedBrush}" />
+                  </Border>
+                </Grid>
+              </Border>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </Grid>
+    </Border>
+  </Panel>
+</UserControl>

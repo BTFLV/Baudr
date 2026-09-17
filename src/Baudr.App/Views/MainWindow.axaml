@@ -1,0 +1,139 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Baudr.App.ViewModels"
+        xmlns:views="using:Baudr.App.Views"
+        xmlns:models="using:Baudr.Core.Models"
+        x:Class="Baudr.App.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Icon="/Assets/baudr-icon.ico"
+        Title="Baudr"
+        Width="1200"
+        Height="800"
+        MinWidth="600"
+        MinHeight="400"
+        Background="{DynamicResource ThemeBackgroundBrush}">
+
+  <Grid RowDefinitions="Auto,*">
+    <!-- Top Chrome & Tabs Bar -->
+    <Border Grid.Row="0" 
+            Background="{DynamicResource ThemeSurfaceBrush}" 
+            BorderBrush="{DynamicResource ThemeBorderSubtleBrush}" 
+            BorderThickness="0,0,0,1" 
+            Padding="8,4">
+      <Grid ColumnDefinitions="Auto,*,Auto">
+        <!-- Brand / Logo -->
+        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" Margin="0,0,16,0" VerticalAlignment="Center">
+          <PathIcon Data="{StaticResource IconTerminal}" Width="16" Height="16" Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" />
+          <TextBlock Text="Baudr" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource ThemeForegroundBrush}" VerticalAlignment="Center" />
+        </StackPanel>
+
+        <!-- Session Tabs -->
+        <ScrollViewer Grid.Column="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+          <StackPanel Orientation="Horizontal" Spacing="4">
+            <ItemsControl ItemsSource="{Binding Sessions}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <StackPanel Orientation="Horizontal" Spacing="2" />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:SessionViewModel">
+                  <Border CornerRadius="6" 
+                          Padding="10,5" 
+                          Background="{Binding $parent[ItemsControl].((vm:MainWindowViewModel)DataContext).SelectedSession, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={Binding .}, Converter={x:Static ObjectConverters.NotEqual}, ConverterParameter=false}"
+                          Cursor="Hand">
+                    <Border.Styles>
+                      <Style Selector="Border">
+                        <Setter Property="Background" Value="Transparent" />
+                      </Style>
+                      <Style Selector="Border:pointerover">
+                        <Setter Property="Background" Value="{DynamicResource ThemeHoverBrush}" />
+                      </Style>
+                    </Border.Styles>
+                    <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
+                      <!-- Status Dot -->
+                      <Ellipse Grid.Column="0" Width="7" Height="7" Margin="0,0,6,0" VerticalAlignment="Center">
+                        <Ellipse.Fill>
+                          <SolidColorBrush Color="{Binding State, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static models:ConnectionState.Connected}, Converter={x:Static ObjectConverters.NotEqual}, ConverterParameter='#10B981'}" />
+                        </Ellipse.Fill>
+                      </Ellipse>
+
+                      <!-- Tab Header -->
+                      <Button Grid.Column="1" 
+                              Classes="icon" 
+                              Content="{Binding Title}" 
+                              Command="{Binding $parent[ItemsControl].((vm:MainWindowViewModel)DataContext).SelectSessionCommand}" 
+                              CommandParameter="{Binding .}" 
+                              FontSize="12" 
+                              FontWeight="SemiBold" 
+                              Padding="0" />
+
+                      <!-- Close Tab "x" -->
+                      <Button Grid.Column="2" 
+                              Classes="icon" 
+                              Command="{Binding $parent[ItemsControl].((vm:MainWindowViewModel)DataContext).CloseSessionCommand}" 
+                              CommandParameter="{Binding .}" 
+                              Margin="6,0,0,0" 
+                              Padding="2" 
+                              ToolTip.Tip="Close Tab (Ctrl+W)">
+                        <PathIcon Data="{StaticResource IconClose}" Width="9" Height="9" Foreground="{DynamicResource ThemeMutedBrush}" />
+                      </Button>
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <!-- New Tab "+" Button -->
+            <Button Classes="icon" 
+                    Command="{Binding CreateNewSessionCommand}" 
+                    ToolTip.Tip="New Session (Ctrl+N)" 
+                    Margin="4,0,0,0">
+              <PathIcon Data="{StaticResource IconPlus}" Width="12" Height="12" Foreground="{DynamicResource ThemeMutedBrush}" />
+            </Button>
+          </StackPanel>
+        </ScrollViewer>
+
+        <!-- Right Quick Actions (Palette, Theme, Settings) -->
+        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+          <!-- Command Palette Button -->
+          <Button Classes="toolbar" Command="{Binding OpenCommandPaletteCommand}" ToolTip.Tip="Command Palette (Ctrl+K)">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <PathIcon Data="{StaticResource IconCommandPalette}" Width="12" Height="12" />
+              <TextBlock Text="Ctrl+K" FontSize="10" FontFamily="Cascadia Code, Consolas, monospace" Foreground="{DynamicResource ThemeMutedBrush}" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+
+          <!-- Theme Toggle Button -->
+          <Button Classes="icon" Command="{Binding ToggleThemeCommand}" ToolTip.Tip="Toggle Theme">
+            <PathIcon Data="{StaticResource IconMacro}" Width="13" Height="13" Foreground="{DynamicResource ThemeMutedBrush}" />
+          </Button>
+
+          <!-- Settings Button -->
+          <Button Classes="icon" Command="{Binding OpenSettingsCommand}" ToolTip.Tip="Settings (Ctrl+,)">
+            <PathIcon Data="{StaticResource IconSettings}" Width="14" Height="14" Foreground="{DynamicResource ThemeMutedBrush}" />
+          </Button>
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <!-- Main Active Session Content -->
+    <ContentControl Grid.Row="1" Content="{Binding SelectedSession}">
+      <ContentControl.ContentTemplate>
+        <DataTemplate x:DataType="vm:SessionViewModel">
+          <views:SessionView DataContext="{Binding .}" />
+        </DataTemplate>
+      </ContentControl.ContentTemplate>
+    </ContentControl>
+
+    <!-- Overlay: Command Palette Dialog -->
+    <Panel Grid.Row="0" Grid.RowSpan="2" IsVisible="{Binding CommandPalette.IsOpen}">
+      <views:CommandPaletteDialog DataContext="{Binding CommandPalette}" />
+    </Panel>
+
+    <!-- Overlay: Settings Dialog -->
+    <Panel Grid.Row="0" Grid.RowSpan="2" IsVisible="{Binding Settings.IsOpen}">
+      <views:SettingsDialog DataContext="{Binding Settings}" />
+    </Panel>
+  </Grid>
+</Window>

@@ -1,0 +1,168 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Baudr.App.ViewModels"
+             xmlns:models="using:Baudr.Core.Models"
+             x:Class="Baudr.App.Views.SettingsDialog"
+             x:DataType="vm:SettingsViewModel">
+
+  <!-- Modal backdrop -->
+  <Panel Background="#60000000">
+    <Border HorizontalAlignment="Center" 
+            VerticalAlignment="Center" 
+            Width="680" 
+            Height="540" 
+            Background="{DynamicResource ThemeSurfaceBrush}" 
+            BorderBrush="{DynamicResource ThemeBorderBrush}" 
+            BorderThickness="1" 
+            CornerRadius="10" 
+            BoxShadow="0 16 32 #50000000">
+      <Grid RowDefinitions="Auto,*,Auto">
+        <!-- Header -->
+        <Border Grid.Row="0" Padding="16,12" BorderBrush="{DynamicResource ThemeBorderSubtleBrush}" BorderThickness="0,0,0,1">
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBlock Grid.Column="0" Text="Settings" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" />
+            <Button Grid.Column="1" Classes="icon" Command="{Binding CloseCommand}">
+              <PathIcon Data="{StaticResource IconClose}" Width="14" Height="14" />
+            </Button>
+          </Grid>
+        </Border>
+
+        <!-- Content Area with Tabs -->
+        <TabControl Grid.Row="1" Margin="8">
+          <!-- General Tab -->
+          <TabItem Header="General">
+            <ScrollViewer Padding="16">
+              <StackPanel Spacing="16">
+                <TextBlock Classes="sectionHeader" Text="APPEARANCE" />
+                <Grid ColumnDefinitions="140,*" RowDefinitions="Auto,Auto">
+                  <TextBlock Grid.Row="0" Grid.Column="0" Text="Theme:" VerticalAlignment="Center" FontSize="12" />
+                  <ComboBox Grid.Row="0" Grid.Column="1" SelectedItem="{Binding Theme}" Width="160">
+                    <models:AppTheme>Dark</models:AppTheme>
+                    <models:AppTheme>Light</models:AppTheme>
+                    <models:AppTheme>System</models:AppTheme>
+                  </ComboBox>
+                </Grid>
+
+                <TextBlock Classes="sectionHeader" Text="STARTUP &amp; BEHAVIOR" Margin="0,12,0,6" />
+                <CheckBox Content="Restore open sessions on startup" IsChecked="{Binding RestoreSessions}" FontSize="12" />
+              </StackPanel>
+            </ScrollViewer>
+          </TabItem>
+
+          <!-- Terminal Tab -->
+          <TabItem Header="Terminal">
+            <ScrollViewer Padding="16">
+              <StackPanel Spacing="12">
+                <TextBlock Classes="sectionHeader" Text="TYPOGRAPHY &amp; RENDERING" />
+                <Grid ColumnDefinitions="140,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto">
+                  <TextBlock Grid.Row="0" Grid.Column="0" Text="Font Family:" VerticalAlignment="Center" FontSize="12" />
+                  <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding FontFamily}" Margin="0,3" />
+
+                  <TextBlock Grid.Row="1" Grid.Column="0" Text="Font Size:" VerticalAlignment="Center" FontSize="12" />
+                  <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding FontSize}" Minimum="8" Maximum="32" Increment="1" Width="120" HorizontalAlignment="Left" Margin="0,3" />
+
+                  <TextBlock Grid.Row="2" Grid.Column="0" Text="Timestamps:" VerticalAlignment="Center" FontSize="12" />
+                  <ComboBox Grid.Row="2" Grid.Column="1" SelectedItem="{Binding TimestampMode}" Width="180" Margin="0,3">
+                    <models:TimestampMode>None</models:TimestampMode>
+                    <models:TimestampMode>Relative</models:TimestampMode>
+                    <models:TimestampMode>AbsoluteTime</models:TimestampMode>
+                    <models:TimestampMode>AbsoluteDateTime</models:TimestampMode>
+                  </ComboBox>
+
+                  <TextBlock Grid.Row="3" Grid.Column="0" Text="Buffer Capacity:" VerticalAlignment="Center" FontSize="12" />
+                  <NumericUpDown Grid.Row="3" Grid.Column="1" Value="{Binding BufferCapacity}" Minimum="100" Maximum="500000" Increment="1000" Width="140" HorizontalAlignment="Left" Margin="0,3" />
+                </Grid>
+
+                <TextBlock Classes="sectionHeader" Text="DISPLAY OPTIONS" Margin="0,12,0,6" />
+                <CheckBox Content="Interpret ANSI escape sequences (colors and text styles)" IsChecked="{Binding InterpretAnsi}" FontSize="12" />
+                <CheckBox Content="Show visible glyphs for control characters (CR, LF, TAB, NUL)" IsChecked="{Binding ShowControlCharacters}" FontSize="12" />
+                <CheckBox Content="Show line numbers in gutter" IsChecked="{Binding ShowLineNumbers}" FontSize="12" />
+              </StackPanel>
+            </ScrollViewer>
+          </TabItem>
+
+          <!-- Serial Tab -->
+          <TabItem Header="Serial">
+            <ScrollViewer Padding="16">
+              <StackPanel Spacing="12">
+                <TextBlock Classes="sectionHeader" Text="CONNECTION DEFAULTS" />
+                <Grid ColumnDefinitions="140,*" RowDefinitions="Auto,Auto,Auto,Auto">
+                  <TextBlock Grid.Row="0" Grid.Column="0" Text="Default Baud Rate:" VerticalAlignment="Center" FontSize="12" />
+                  <ComboBox Grid.Row="0" Grid.Column="1" SelectedItem="{Binding DefaultBaudRate}" Width="140" Margin="0,3">
+                    <x:Int32>9600</x:Int32>
+                    <x:Int32>19200</x:Int32>
+                    <x:Int32>38400</x:Int32>
+                    <x:Int32>57600</x:Int32>
+                    <x:Int32>115200</x:Int32>
+                    <x:Int32>230400</x:Int32>
+                    <x:Int32>460800</x:Int32>
+                    <x:Int32>921600</x:Int32>
+                    <x:Int32>1000000</x:Int32>
+                    <x:Int32>2000000</x:Int32>
+                  </ComboBox>
+
+                  <TextBlock Grid.Row="1" Grid.Column="0" Text="Default Line Ending:" VerticalAlignment="Center" FontSize="12" />
+                  <ComboBox Grid.Row="1" Grid.Column="1" SelectedItem="{Binding DefaultLineEnding}" Width="140" Margin="0,3">
+                    <models:LineEnding>CrLf</models:LineEnding>
+                    <models:LineEnding>Lf</models:LineEnding>
+                    <models:LineEnding>Cr</models:LineEnding>
+                    <models:LineEnding>None</models:LineEnding>
+                  </ComboBox>
+
+                  <TextBlock Grid.Row="2" Grid.Column="0" Text="Auto Reconnect:" VerticalAlignment="Center" FontSize="12" />
+                  <CheckBox Grid.Row="2" Grid.Column="1" IsChecked="{Binding AutoReconnect}" Content="Automatically reconnect if device drops" FontSize="12" Margin="0,3" />
+
+                  <TextBlock Grid.Row="3" Grid.Column="0" Text="Reconnect Delay (ms):" VerticalAlignment="Center" FontSize="12" />
+                  <NumericUpDown Grid.Row="3" Grid.Column="1" Value="{Binding ReconnectDelayMs}" Minimum="200" Maximum="30000" Increment="500" Width="140" HorizontalAlignment="Left" Margin="0,3" />
+                </Grid>
+              </StackPanel>
+            </ScrollViewer>
+          </TabItem>
+
+          <!-- About Tab -->
+          <TabItem Header="About">
+            <ScrollViewer Padding="16">
+              <StackPanel Spacing="14">
+                <StackPanel Orientation="Horizontal" Spacing="12">
+                  <PathIcon Data="{StaticResource IconTerminal}" Width="36" Height="36" Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" />
+                  <StackPanel VerticalAlignment="Center">
+                    <TextBlock Text="Baudr" FontSize="20" FontWeight="Bold" />
+                    <TextBlock Text="{Binding AppVersion, StringFormat='Version {0}'}" FontSize="12" Foreground="{DynamicResource ThemeMutedBrush}" />
+                  </StackPanel>
+                </StackPanel>
+
+                <TextBlock Text="A modern, high-performance serial monitor and terminal designed for developers, embedded engineers, and makers." 
+                           FontSize="12" 
+                           Foreground="{DynamicResource ThemeMutedBrush}" 
+                           TextWrapping="Wrap" />
+
+                <Separator Background="{DynamicResource ThemeBorderSubtleBrush}" />
+
+                <Grid ColumnDefinitions="120,*" RowDefinitions="Auto,Auto">
+                  <TextBlock Grid.Row="0" Grid.Column="0" Text="Runtime:" FontSize="11" Foreground="{DynamicResource ThemeMutedBrush}" />
+                  <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding RuntimeInfo}" FontSize="11" />
+
+                  <TextBlock Grid.Row="1" Grid.Column="0" Text="Commit:" FontSize="11" Foreground="{DynamicResource ThemeMutedBrush}" Margin="0,4,0,0" />
+                  <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding CommitSha}" FontSize="11" Margin="0,4,0,0" />
+                </Grid>
+
+                <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,8,0,0">
+                  <Button Classes="toolbar" Content="Open Logs Folder" Command="{Binding OpenLogsFolderCommand}" />
+                </StackPanel>
+              </StackPanel>
+            </ScrollViewer>
+          </TabItem>
+        </TabControl>
+
+        <!-- Footer -->
+        <Border Grid.Row="2" Padding="16,10" BorderBrush="{DynamicResource ThemeBorderSubtleBrush}" BorderThickness="0,1,0,0">
+          <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+            <Button Classes="toolbar" Content="Cancel" Command="{Binding CloseCommand}" />
+            <Button Classes="primary" Content="Save Changes" Command="{Binding SaveCommand}" />
+          </StackPanel>
+        </Border>
+      </Grid>
+    </Border>
+  </Panel>
+</UserControl>
+

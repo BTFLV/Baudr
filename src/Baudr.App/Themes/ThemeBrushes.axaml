@@ -1,0 +1,68 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!-- Shared Universal Colors -->
+  <Color x:Key="RxColor">#10B981</Color>
+  <SolidColorBrush x:Key="RxBrush" Color="{StaticResource RxColor}" />
+
+  <Color x:Key="TxColor">#38BDF8</Color>
+  <SolidColorBrush x:Key="TxBrush" Color="{StaticResource TxColor}" />
+
+  <Color x:Key="SysColor">#A855F7</Color>
+  <SolidColorBrush x:Key="SysBrush" Color="{StaticResource SysColor}" />
+
+  <Color x:Key="WarnColor">#F59E0B</Color>
+  <SolidColorBrush x:Key="WarnBrush" Color="{StaticResource WarnColor}" />
+
+  <Color x:Key="ErrorColor">#EF4444</Color>
+  <SolidColorBrush x:Key="ErrorBrush" Color="{StaticResource ErrorColor}" />
+
+  <Color x:Key="AccentColor">#00B4D8</Color>
+  <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource AccentColor}" />
+  <SolidColorBrush x:Key="AccentHoverBrush" Color="#0096C7" />
+
+  <ResourceDictionary.ThemeDictionaries>
+    <!-- Dark Theme (Default Obsidian & Slate) -->
+    <ResourceDictionary x:Key="Dark">
+      <SolidColorBrush x:Key="ThemeBackgroundBrush" Color="#0B0F19" />
+      <SolidColorBrush x:Key="ThemeSurfaceBrush" Color="#111827" />
+      <SolidColorBrush x:Key="ThemeCardBrush" Color="#1F2937" />
+      <SolidColorBrush x:Key="ThemeHoverBrush" Color="#374151" />
+      <SolidColorBrush x:Key="ThemeBorderBrush" Color="#1F2937" />
+      <SolidColorBrush x:Key="ThemeBorderSubtleBrush" Color="#161F30" />
+      <SolidColorBrush x:Key="ThemeForegroundBrush" Color="#F9FAFB" />
+      <SolidColorBrush x:Key="ThemeMutedBrush" Color="#9CA3AF" />
+
+      <!-- Terminal specific -->
+      <SolidColorBrush x:Key="TerminalBackgroundBrush" Color="#030712" />
+      <SolidColorBrush x:Key="TerminalForegroundBrush" Color="#E5E7EB" />
+      <SolidColorBrush x:Key="TerminalTimestampBrush" Color="#6B7280" />
+      <SolidColorBrush x:Key="TerminalLineNumberBrush" Color="#4B5563" />
+      <SolidColorBrush x:Key="TerminalSelectionBrush" Color="#1E3A8A" Opacity="0.5" />
+      <SolidColorBrush x:Key="TerminalSearchHighlightBrush" Color="#CA8A04" Opacity="0.4" />
+      <SolidColorBrush x:Key="TerminalGutterBorderBrush" Color="#1F2937" />
+    </ResourceDictionary>
+
+    <!-- Light Theme (Clean Crisp Minimal) -->
+    <ResourceDictionary x:Key="Light">
+      <SolidColorBrush x:Key="ThemeBackgroundBrush" Color="#F8FAFC" />
+      <SolidColorBrush x:Key="ThemeSurfaceBrush" Color="#FFFFFF" />
+      <SolidColorBrush x:Key="ThemeCardBrush" Color="#F1F5F9" />
+      <SolidColorBrush x:Key="ThemeHoverBrush" Color="#E2E8F0" />
+      <SolidColorBrush x:Key="ThemeBorderBrush" Color="#CBD5E1" />
+      <SolidColorBrush x:Key="ThemeBorderSubtleBrush" Color="#E2E8F0" />
+      <SolidColorBrush x:Key="ThemeForegroundBrush" Color="#0F172A" />
+      <SolidColorBrush x:Key="ThemeMutedBrush" Color="#64748B" />
+
+      <!-- Terminal specific -->
+      <SolidColorBrush x:Key="TerminalBackgroundBrush" Color="#FFFFFF" />
+      <SolidColorBrush x:Key="TerminalForegroundBrush" Color="#1E293B" />
+      <SolidColorBrush x:Key="TerminalTimestampBrush" Color="#94A3B8" />
+      <SolidColorBrush x:Key="TerminalLineNumberBrush" Color="#CBD5E1" />
+      <SolidColorBrush x:Key="TerminalSelectionBrush" Color="#93C5FD" Opacity="0.5" />
+      <SolidColorBrush x:Key="TerminalSearchHighlightBrush" Color="#FEF08A" />
+      <SolidColorBrush x:Key="TerminalGutterBorderBrush" Color="#E2E8F0" />
+    </ResourceDictionary>
+  </ResourceDictionary.ThemeDictionaries>
+</ResourceDictionary>
+
