@@ -20,6 +20,12 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     private SessionViewModel? _selectedSession;
 
+    partial void OnSelectedSessionChanged(SessionViewModel? oldValue, SessionViewModel? newValue)
+    {
+        if (oldValue != null) oldValue.IsSelected = false;
+        if (newValue != null) newValue.IsSelected = true;
+    }
+
     [ObservableProperty]
     private CommandPaletteViewModel _commandPalette;
 

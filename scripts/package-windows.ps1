@@ -6,6 +6,15 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+# Ensure dotnet SDK path is available
+if (!(Get-Command dotnet -ErrorAction SilentlyContinue) -or !(dotnet --list-sdks 2>$null)) {
+    $userDotnet = Join-Path $env:USERPROFILE ".dotnet"
+    if (Test-Path $userDotnet) {
+        $env:DOTNET_ROOT = $userDotnet
+        $env:PATH = "$userDotnet;$env:PATH"
+    }
+}
+
 Write-Host "=== Packaging Baudr for Windows (win-x64) ===" -ForegroundColor Cyan
 
 $distDir = "dist/win-x64"

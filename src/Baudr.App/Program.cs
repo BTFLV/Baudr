@@ -17,6 +17,11 @@ internal static class Program
     [STAThread]
     public static int Main(string[] args)
     {
+        AppDomain.CurrentDomain.UnhandledException += (s, e) =>
+        {
+            LogCrash("UnhandledException", e.ExceptionObject as Exception);
+        };
+
         // Non-interactive package sanity verification mode
         if (args.Length >= 2 && args[0].Equals("--verify-package", StringComparison.OrdinalIgnoreCase))
         {
@@ -30,8 +35,24 @@ internal static class Program
         }
         catch (Exception ex)
         {
+            LogCrash("FatalStartupError", ex);
             Console.Error.WriteLine($"Fatal startup error: {ex}");
             return 1;
+        }
+    }
+
+    private static void LogCrash(string context, Exception? ex)
+    {
+        try
+        {
+            var logPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Baudr", "crash.log");
+            var dir = Path.GetDirectoryName(logPath);
+            if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
+            File.AppendAllText(logPath, $"[{DateTime.UtcNow:O}] [{context}] {ex}\n");
+        }
+        catch
+        {
+            // Ignore failure in crash logger
         }
     }
 

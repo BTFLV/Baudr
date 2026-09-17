@@ -10,6 +10,8 @@ public interface ISerialPortEnumerator
 public interface ISettingsService
 {
     AppSettings Current { get; }
+    void Load();
+    void Save();
     Task LoadAsync();
     Task SaveAsync();
     void Update(Action<AppSettings> updateAction);

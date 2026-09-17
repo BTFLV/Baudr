@@ -40,11 +40,14 @@
                 <DataTemplate x:DataType="vm:SessionViewModel">
                   <Border CornerRadius="6" 
                           Padding="10,5" 
-                          Background="{Binding $parent[ItemsControl].((vm:MainWindowViewModel)DataContext).SelectedSession, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={Binding .}, Converter={x:Static ObjectConverters.NotEqual}, ConverterParameter=false}"
+                          Classes.active="{Binding IsSelected}"
                           Cursor="Hand">
                     <Border.Styles>
                       <Style Selector="Border">
                         <Setter Property="Background" Value="Transparent" />
+                      </Style>
+                      <Style Selector="Border.active">
+                        <Setter Property="Background" Value="{DynamicResource ThemeSurfaceAltBrush}" />
                       </Style>
                       <Style Selector="Border:pointerover">
                         <Setter Property="Background" Value="{DynamicResource ThemeHoverBrush}" />
@@ -52,10 +55,16 @@
                     </Border.Styles>
                     <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
                       <!-- Status Dot -->
-                      <Ellipse Grid.Column="0" Width="7" Height="7" Margin="0,0,6,0" VerticalAlignment="Center">
-                        <Ellipse.Fill>
-                          <SolidColorBrush Color="{Binding State, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static models:ConnectionState.Connected}, Converter={x:Static ObjectConverters.NotEqual}, ConverterParameter='#10B981'}" />
-                        </Ellipse.Fill>
+                      <Ellipse Grid.Column="0" Width="7" Height="7" Margin="0,0,6,0" VerticalAlignment="Center"
+                               Classes.connected="{Binding IsConnected}">
+                        <Ellipse.Styles>
+                          <Style Selector="Ellipse">
+                            <Setter Property="Fill" Value="#6B7280" />
+                          </Style>
+                          <Style Selector="Ellipse.connected">
+                            <Setter Property="Fill" Value="#10B981" />
+                          </Style>
+                        </Ellipse.Styles>
                       </Ellipse>
 
                       <!-- Tab Header -->

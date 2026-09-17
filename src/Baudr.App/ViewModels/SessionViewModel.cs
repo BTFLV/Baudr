@@ -35,7 +35,13 @@ public partial class SessionViewModel : ViewModelBase, IAsyncDisposable
     private string _title = "Serial 1";
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsConnected))]
     private ConnectionState _state = ConnectionState.Disconnected;
+
+    public bool IsConnected => State == ConnectionState.Connected;
+
+    [ObservableProperty]
+    private bool _isSelected;
 
     [ObservableProperty]
     private string? _statusMessage = "Disconnected";

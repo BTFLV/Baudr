@@ -34,6 +34,76 @@ public class SettingsService : ISettingsService
         }
     }
 
+    public void Load()
+    {
+        if (!File.Exists(_settingsFilePath))
+        {
+            Current = new AppSettings();
+            Save();
+            return;
+        }
+
+        try
+        {
+            var json = File.ReadAllText(_settingsFilePath);
+            var loaded = JsonSerializer.Deserialize(json, BaudrJsonContext.Default.AppSettings);
+            Current = loaded ?? new AppSettings();
+        }
+        catch (Exception ex)
+        {
+            try
+            {
+                var timestamp = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss", CultureInfo.InvariantCulture);
+                var backupPath = $"{_settingsFilePath}.corrupted_{timestamp}.bak";
+                File.Copy(_settingsFilePath, backupPath, overwrite: true);
+            }
+            catch
+            {
+                // Ignore backup copy failure
+            }
+
+            Current = new AppSettings();
+            Save();
+            System.Diagnostics.Debug.WriteLine($"Settings file corrupted, recovered defaults: {ex.Message}");
+        }
+    }
+
+    public void Save()
+    {
+        string json;
+        lock (_lock)
+        {
+            json = JsonSerializer.Serialize(_current, BaudrJsonContext.Default.AppSettings);
+        }
+
+        var dir = Path.GetDirectoryName(_settingsFilePath);
+        if (!string.IsNullOrEmpty(dir))
+        {
+            Directory.CreateDirectory(dir);
+        }
+
+        var tempFile = $"{_settingsFilePath}.{Guid.NewGuid():N}.tmp";
+        try
+        {
+            File.WriteAllText(tempFile, json);
+            File.Move(tempFile, _settingsFilePath, overwrite: true);
+        }
+        catch
+        {
+            try
+            {
+                if (File.Exists(tempFile)) File.Delete(tempFile);
+            }
+            catch
+            {
+                // Ignore cleanup error
+            }
+            throw;
+        }
+
+        SettingsChanged?.Invoke(this, Current);
+    }
+
     public async Task LoadAsync()
     {
         if (!File.Exists(_settingsFilePath))

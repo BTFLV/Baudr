@@ -19,22 +19,41 @@ public partial class App : Application
         AvaloniaXamlLoader.Load(this);
     }
 
-    public override async void OnFrameworkInitializationCompleted()
+    public override void OnFrameworkInitializationCompleted()
     {
-        await SettingsService.LoadAsync().ConfigureAwait(true);
-        ApplyTheme(SettingsService.Current.General.Theme);
-
-        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+        try
         {
-            var mainVm = new MainWindowViewModel(SettingsService);
-            var mainWindow = new MainWindow
-            {
-                DataContext = mainVm
-            };
-            desktop.MainWindow = mainWindow;
-        }
+            SettingsService.Load();
+            ApplyTheme(SettingsService.Current.General.Theme);
 
-        base.OnFrameworkInitializationCompleted();
+            if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+            {
+                var mainVm = new MainWindowViewModel(SettingsService);
+                var mainWindow = new MainWindow
+                {
+                    DataContext = mainVm
+                };
+                desktop.MainWindow = mainWindow;
+                mainWindow.Show();
+            }
+
+            base.OnFrameworkInitializationCompleted();
+        }
+        catch (Exception ex)
+        {
+            var logPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Baudr", "crash.log");
+            try
+            {
+                var dir = Path.GetDirectoryName(logPath);
+                if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
+                File.AppendAllText(logPath, $"{DateTime.UtcNow:O} INIT ERROR: {ex}\n");
+            }
+            catch
+            {
+                // Ignore secondary logging failure
+            }
+            throw;
+        }
     }
 
     public static void ApplyTheme(AppTheme theme)
