@@ -8,6 +8,9 @@ on:
       - 'docs/**'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false
@@ -19,6 +22,7 @@ jobs:
   verify:
     name: Verify (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
@@ -48,6 +52,7 @@ jobs:
     name: Package (${{ matrix.rid }})
     needs: verify
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
@@ -61,7 +66,7 @@ jobs:
             script: bash scripts/package-macos.sh osx-arm64 Release true artifacts
             artifact_name: Baudr-osx-arm64.zip
           - rid: osx-x64
-            os: macos-13
+            os: macos-15-intel
             script: bash scripts/package-macos.sh osx-x64 Release true artifacts
             artifact_name: Baudr-osx-x64.zip
           - rid: linux-x64
@@ -95,13 +100,14 @@ jobs:
           if-no-files-found: error
 
   # ---------------------------------------------------------------------------
-  # 3. RELEASE: Atomically update the rolling release 'current'
+  # 3. RELEASE: Update the rolling release 'current'
   # ---------------------------------------------------------------------------
   release:
     name: Update Rolling Release
     needs: package
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    timeout-minutes: 60
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     permissions:
       contents: write
     steps:
@@ -113,6 +119,7 @@ jobs:
       - name: Download all package artifacts
         uses: actions/download-artifact@v4
         with:
+          pattern: Baudr-*.zip
           path: release_assets
           merge-multiple: true
 
@@ -133,6 +140,7 @@ jobs:
               echo "Error: Missing or empty expected package release_assets/$pkg"
               exit 1
             fi
+            unzip -tq "release_assets/$pkg"
             echo "✓ Verified release_assets/$pkg ($(du -h "release_assets/$pkg" | cut -f1))"
           done
 
@@ -140,7 +148,7 @@ jobs:
         run: |
           git fetch origin tag current --no-tags || true
           if git rev-parse -q --verify "refs/tags/current" >/dev/null; then
-            CURRENT_TAG_COMMIT=$(git rev-parse refs/tags/current)
+            CURRENT_TAG_COMMIT=$(git rev-parse "refs/tags/current^{commit}")
             HEAD_COMMIT=$(git rev-parse HEAD)
             echo "Current tag commit: $CURRENT_TAG_COMMIT"
             echo "Target HEAD commit: $HEAD_COMMIT"
@@ -180,24 +188,22 @@ jobs:
       - name: Publish or Update Rolling GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
         run: |
-          # Check if release already exists
-          if gh release view current >/dev/null 2>&1; then
-            echo "Updating existing 'current' release..."
-            gh release upload current --clobber release_assets/*.zip
-            gh release edit current --title "Current Baudr Build" --notes-file release_notes.md --draft=false
-          else
-            echo "Creating initial 'current' release..."
-            gh release create current \
-              --title "Current Baudr Build" \
-              --notes-file release_notes.md \
-              --clobber \
-              release_assets/*.zip
+          set -euo pipefail
+
+          # Query drafts as well, so a failed initial upload can be retried.
+          release_id="$(gh api --paginate "repos/${GH_REPO}/releases" --jq '.[] | select(.tag_name == "current") | .id')"
+          if [ -z "$release_id" ]; then
+            gh release create current --draft --target "$GITHUB_SHA" \
+              --title "Current Baudr Build" --notes-file release_notes.md
           fi
 
-          # Update git tag to current commit
-          echo "Updating git tag 'current'..."
-          git tag -f current HEAD
-          git push -f origin current
-          echo "✓ Successfully updated rolling release and tag."
+          # Keep the same release, asset names, and download URLs on every build.
+          gh release upload current --clobber release_assets/*.zip
 
+          git tag -f current "$GITHUB_SHA"
+          git push origin refs/tags/current --force
+          gh release edit current --draft=false --latest \
+            --title "Current Baudr Build" --notes-file release_notes.md
+          gh release view current --json url,assets --jq '{url, assets: [.assets[].name]}'
