@@ -1,4 +1,7 @@
-# Baudr
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/logo-dark.svg">
+  <img src="assets/logo-light.svg" alt="Baudr logo" width="420">
+</picture>
 
 **Baudr** is a modern, high-performance Serial Monitor and Terminal for developers, embedded engineers, electronics engineers, makers, and anyone working with UART/serial devices.
 

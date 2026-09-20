@@ -13,11 +13,16 @@ public class MockSerialPort : ISerialPort
     private bool _isOpen;
     private bool _disposed;
     private ModemSignals _signals = new(true, true, true, false);
+    private Stream? _baseStream;
 
     public string PortName => _config.PortName;
     public bool IsOpen => _isOpen;
     public SerialPortConfig CurrentConfig => _config;
-    public Stream? BaseStream => _rxPipe.Reader.AsStream();
+
+    // Cached rather than allocated on every access: PipeReader.AsStream() completes the
+    // underlying reader when the returned Stream is disposed, so handing out a fresh
+    // wrapper per call would let any one caller's Dispose() break every other holder.
+    public Stream? BaseStream => _baseStream ??= _rxPipe.Reader.AsStream(leaveOpen: true);
 
     public bool EchoWrites { get; set; }
     public bool DtrState { get; private set; }

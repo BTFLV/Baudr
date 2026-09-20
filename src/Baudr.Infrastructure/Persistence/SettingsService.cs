@@ -9,6 +9,7 @@ public class SettingsService : ISettingsService
 {
     private readonly string _settingsFilePath;
     private readonly object _lock = new();
+    private readonly SemaphoreSlim _saveGate = new(1, 1);
     private AppSettings _current = new();
 
     public AppSettings Current
@@ -141,36 +142,47 @@ public class SettingsService : ISettingsService
 
     public async Task SaveAsync()
     {
-        string json;
-        lock (_lock)
-        {
-            json = JsonSerializer.Serialize(_current, BaudrJsonContext.Default.AppSettings);
-        }
-
-        var dir = Path.GetDirectoryName(_settingsFilePath);
-        if (!string.IsNullOrEmpty(dir))
-        {
-            Directory.CreateDirectory(dir);
-        }
-
-        // Atomic write via temporary file
-        var tempFile = $"{_settingsFilePath}.{Guid.NewGuid():N}.tmp";
+        // Serialize saves so concurrent Update()/SaveAsync calls can't race each
+        // other's writes; each snapshot is taken only after any earlier save has
+        // finished, so the file on disk always ends up reflecting the latest state.
+        await _saveGate.WaitAsync().ConfigureAwait(false);
         try
         {
-            await File.WriteAllTextAsync(tempFile, json).ConfigureAwait(false);
-            File.Move(tempFile, _settingsFilePath, overwrite: true);
-        }
-        catch
-        {
+            string json;
+            lock (_lock)
+            {
+                json = JsonSerializer.Serialize(_current, BaudrJsonContext.Default.AppSettings);
+            }
+
+            var dir = Path.GetDirectoryName(_settingsFilePath);
+            if (!string.IsNullOrEmpty(dir))
+            {
+                Directory.CreateDirectory(dir);
+            }
+
+            // Atomic write via temporary file
+            var tempFile = $"{_settingsFilePath}.{Guid.NewGuid():N}.tmp";
             try
             {
-                if (File.Exists(tempFile)) File.Delete(tempFile);
+                await File.WriteAllTextAsync(tempFile, json).ConfigureAwait(false);
+                File.Move(tempFile, _settingsFilePath, overwrite: true);
             }
             catch
             {
-                // Ignore cleanup error
+                try
+                {
+                    if (File.Exists(tempFile)) File.Delete(tempFile);
+                }
+                catch
+                {
+                    // Ignore cleanup error
+                }
+                throw;
             }
-            throw;
+        }
+        finally
+        {
+            _saveGate.Release();
         }
 
         SettingsChanged?.Invoke(this, Current);

@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 140" width="560" height="140" role="img" aria-label="Baudr logo">
+  <defs>
+    <linearGradient id="bd-accent-light" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#0369A1"/>
+      <stop offset="0.5" stop-color="#0891B2"/>
+      <stop offset="1" stop-color="#4F46E5"/>
+    </linearGradient>
+    <linearGradient id="bd-border-light" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0369A1" stop-opacity="0.5"/>
+      <stop offset="1" stop-color="#4F46E5" stop-opacity="0.2"/>
+    </linearGradient>
+  </defs>
+  <g transform="translate(10,10)">
+    <!-- UART pin header -->
+    <g stroke="url(#bd-accent-light)" stroke-width="4" stroke-linecap="round" opacity="0.8">
+      <line x1="26" y1="0" x2="26" y2="-10"/>
+      <line x1="60" y1="0" x2="60" y2="-10"/>
+      <line x1="94" y1="0" x2="94" y2="-10"/>
+      <line x1="26" y1="120" x2="26" y2="130"/>
+      <line x1="60" y1="120" x2="60" y2="130"/>
+      <line x1="94" y1="120" x2="94" y2="130"/>
+    </g>
+    <rect x="0" y="0" width="120" height="120" rx="26" fill="#F1F5F9" stroke="url(#bd-border-light)" stroke-width="3"/>
+    <!-- Baud pulse waveform -->
+    <path d="M19 80 L33 80 L33 42 L52 42 L52 80 L66 80 L66 54 L80 54 L80 80 L101 80"
+          fill="none" stroke="url(#bd-accent-light)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="33" cy="42" r="3.5" fill="#0369A1"/>
+    <circle cx="52" cy="42" r="3.5" fill="#0891B2"/>
+    <circle cx="66" cy="54" r="3.5" fill="#4F46E5"/>
+    <circle cx="80" cy="54" r="3.5" fill="#4F46E5"/>
+  </g>
+  <g font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-weight="700">
+    <text x="150" y="80" font-size="52" fill="#0F172A">Baudr</text>
+    <text x="152" y="104" font-size="16" font-weight="500" fill="#64748B">Serial Monitor &amp; Terminal</text>
+  </g>
+</svg>

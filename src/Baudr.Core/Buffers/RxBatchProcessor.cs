@@ -14,6 +14,9 @@ public class RxBatchProcessor : IAsyncDisposable, IDisposable
     private readonly StringBuilder _partialLineBuffer = new();
     private readonly List<byte> _partialByteBuffer = [];
     private readonly AnsiParser _ansiParser = new();
+    private Decoder? _rxDecoder;
+    private Decoder? _txDecoder;
+    private string? _decoderEncodingName;
     private readonly PeriodicTimer _timer;
     private readonly CancellationTokenSource _cts = new();
     private readonly Task _processTask;
@@ -63,7 +66,7 @@ public class RxBatchProcessor : IAsyncDisposable, IDisposable
         {
             while (await _timer.WaitForNextTickAsync(_cts.Token).ConfigureAwait(false))
             {
-                FlushQueue();
+                await FlushQueueAsync().ConfigureAwait(false);
             }
         }
         catch (OperationCanceledException)
@@ -76,7 +79,9 @@ public class RxBatchProcessor : IAsyncDisposable, IDisposable
         }
     }
 
-    public void FlushQueue()
+    public void FlushQueue() => FlushQueueAsync().GetAwaiter().GetResult();
+
+    public async Task FlushQueueAsync()
     {
         if (_incomingQueue.IsEmpty && _partialLineBuffer.Length == 0 && _partialByteBuffer.Count == 0) return;
 
@@ -93,11 +98,11 @@ public class RxBatchProcessor : IAsyncDisposable, IDisposable
             {
                 try
                 {
-                    RawDataLogger(item.Data).AsTask().Wait(50);
+                    await RawDataLogger(item.Data).AsTask().WaitAsync(TimeSpan.FromMilliseconds(50)).ConfigureAwait(false);
                 }
                 catch
                 {
-                    // Ignore logger delays
+                    // Ignore logger delays/timeouts
                 }
             }
 
@@ -131,7 +136,7 @@ public class RxBatchProcessor : IAsyncDisposable, IDisposable
         List<PlotDataPoint> plotPoints,
         ref long sampleIndex)
     {
-        var text = TextEncodingHelper.Decode(data, encoding);
+        var text = DecodeIncremental(data, direction, encoding);
 
         for (int i = 0; i < text.Length; i++)
         {
@@ -156,6 +161,26 @@ public class RxBatchProcessor : IAsyncDisposable, IDisposable
             _partialLineBuffer.Clear();
             CreateTerminalLine(rawLine, direction, timestamp, linesToAdd, plotPoints, ref sampleIndex);
         }
+    }
+
+    private string DecodeIncremental(ReadOnlySpan<byte> data, Direction direction, Encoding encoding)
+    {
+        if (data.IsEmpty) return string.Empty;
+
+        if (_decoderEncodingName != EncodingName || _rxDecoder == null || _txDecoder == null)
+        {
+            _rxDecoder = encoding.GetDecoder();
+            _txDecoder = encoding.GetDecoder();
+            _decoderEncodingName = EncodingName;
+        }
+
+        var decoder = direction == Direction.Rx ? _rxDecoder : _txDecoder;
+        int charCount = decoder.GetCharCount(data, flush: false);
+        if (charCount == 0) return string.Empty;
+
+        var chars = new char[charCount];
+        decoder.GetChars(data, chars, flush: false);
+        return new string(chars);
     }
 
     private void CreateTerminalLine(

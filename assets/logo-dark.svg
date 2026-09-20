@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 140" width="560" height="140" role="img" aria-label="Baudr logo">
+  <defs>
+    <linearGradient id="bd-bg-dark" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0F172A"/>
+      <stop offset="1" stop-color="#020617"/>
+    </linearGradient>
+    <linearGradient id="bd-accent-dark" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#38BDF8"/>
+      <stop offset="0.5" stop-color="#00B4D8"/>
+      <stop offset="1" stop-color="#818CF8"/>
+    </linearGradient>
+    <linearGradient id="bd-border-dark" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#38BDF8" stop-opacity="0.6"/>
+      <stop offset="1" stop-color="#818CF8" stop-opacity="0.2"/>
+    </linearGradient>
+  </defs>
+  <g transform="translate(10,10)">
+    <!-- UART pin header -->
+    <g stroke="url(#bd-accent-dark)" stroke-width="4" stroke-linecap="round" opacity="0.8">
+      <line x1="26" y1="0" x2="26" y2="-10"/>
+      <line x1="60" y1="0" x2="60" y2="-10"/>
+      <line x1="94" y1="0" x2="94" y2="-10"/>
+      <line x1="26" y1="120" x2="26" y2="130"/>
+      <line x1="60" y1="120" x2="60" y2="130"/>
+      <line x1="94" y1="120" x2="94" y2="130"/>
+    </g>
+    <rect x="0" y="0" width="120" height="120" rx="26" fill="url(#bd-bg-dark)" stroke="url(#bd-border-dark)" stroke-width="3"/>
+    <!-- Baud pulse waveform -->
+    <path d="M19 80 L33 80 L33 42 L52 42 L52 80 L66 80 L66 54 L80 54 L80 80 L101 80"
+          fill="none" stroke="url(#bd-accent-dark)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="33" cy="42" r="3.5" fill="#38BDF8"/>
+    <circle cx="52" cy="42" r="3.5" fill="#00B4D8"/>
+    <circle cx="66" cy="54" r="3.5" fill="#818CF8"/>
+    <circle cx="80" cy="54" r="3.5" fill="#818CF8"/>
+  </g>
+  <g font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-weight="700">
+    <text x="150" y="80" font-size="52" fill="#F9FAFB">Baudr</text>
+    <text x="152" y="104" font-size="16" font-weight="500" fill="#9CA3AF">Serial Monitor &amp; Terminal</text>
+  </g>
+</svg>

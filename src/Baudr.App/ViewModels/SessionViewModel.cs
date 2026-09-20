@@ -267,7 +267,7 @@ public partial class SessionViewModel : ViewModelBase, IAsyncDisposable
         };
 
         _statsTimer = new System.Timers.Timer(500);
-        _statsTimer.Elapsed += (s, e) => UpdateStatisticsUI();
+        _statsTimer.Elapsed += (s, e) => Avalonia.Threading.Dispatcher.UIThread.Post(UpdateStatisticsUI);
         _statsTimer.Start();
 
         RefreshPorts();

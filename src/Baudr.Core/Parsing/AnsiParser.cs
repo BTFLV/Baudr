@@ -102,6 +102,13 @@ public class AnsiParser
                         currentSpanStart = sb.Length;
                         continue;
                     }
+
+                    // Truncated CSI sequence (no terminating letter before end of text):
+                    // suppress the entire dangling ESC + '[' + partial parameters rather
+                    // than leaking them into the visible text.
+                    i = len;
+                    currentSpanStart = sb.Length;
+                    continue;
                 }
 
                 // If not valid CSI sequence, skip ESC and continue safely
@@ -115,6 +122,24 @@ public class AnsiParser
                 if (sb.Length > 0)
                 {
                     sb.Length--;
+
+                    // Shrink or drop already-committed spans that now extend past
+                    // the erased text, so rendering never sees a span whose range
+                    // silently exceeds the final CleanText length.
+                    while (spans.Count > 0 && spans[^1].Start + spans[^1].Length > sb.Length)
+                    {
+                        var last = spans[^1];
+                        if (last.Start >= sb.Length)
+                        {
+                            spans.RemoveAt(spans.Count - 1);
+                        }
+                        else
+                        {
+                            spans[^1] = last with { Length = sb.Length - last.Start };
+                            break;
+                        }
+                    }
+
                     if (currentSpanStart > sb.Length) currentSpanStart = sb.Length;
                 }
                 i++;

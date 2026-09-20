@@ -9,6 +9,7 @@ namespace Baudr.Infrastructure.Logging;
 public class SessionLogger : ISessionLogger
 {
     private readonly object _lock = new();
+    private readonly SemaphoreSlim _writeGate = new(1, 1);
     private FileStream? _fileStream;
     private StreamWriter? _writer;
     private LogFormat _format = LogFormat.PlainText;
@@ -99,53 +100,63 @@ public class SessionLogger : ISessionLogger
     {
         var ts = timestamp ?? DateTimeOffset.UtcNow;
 
-        if (_format == LogFormat.RawBinary)
+        // Serialize writes: RX and TX are logged concurrently from different tasks,
+        // and StreamWriter/FileStream are not safe for concurrent multi-threaded use.
+        await _writeGate.WaitAsync().ConfigureAwait(false);
+        try
         {
-            var stream = _fileStream;
-            if (stream == null) return;
+            if (_format == LogFormat.RawBinary)
+            {
+                var stream = _fileStream;
+                if (stream == null) return;
+
+                try
+                {
+                    await stream.WriteAsync(rawBytes).ConfigureAwait(false);
+                    Interlocked.Add(ref _bytesWritten, rawBytes.Length);
+                }
+                catch
+                {
+                    // Ignore transient write errors
+                }
+                return;
+            }
+
+            var writer = _writer;
+            if (writer == null) return;
+
+            var text = formattedText ?? Encoding.UTF8.GetString(rawBytes.Span);
+            string line;
+
+            if (_format == LogFormat.TimestampedText)
+            {
+                var dirStr = direction == Direction.Rx ? "RX" : "TX";
+                line = $"[{ts.ToString("yyyy-MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture)}] [{dirStr}] {text}";
+            }
+            else if (_format == LogFormat.Csv)
+            {
+                var escaped = text.Replace("\"", "\"\"", StringComparison.Ordinal);
+                line = $"{ts.ToString("o", CultureInfo.InvariantCulture)},{direction},\"{escaped}\"";
+            }
+            else
+            {
+                line = text;
+            }
 
             try
             {
-                await stream.WriteAsync(rawBytes).ConfigureAwait(false);
-                Interlocked.Add(ref _bytesWritten, rawBytes.Length);
+                await writer.WriteLineAsync(line.AsMemory()).ConfigureAwait(false);
+                await writer.FlushAsync().ConfigureAwait(false);
+                Interlocked.Add(ref _bytesWritten, Encoding.UTF8.GetByteCount(line) + 2);
             }
             catch
             {
                 // Ignore transient write errors
             }
-            return;
         }
-
-        var writer = _writer;
-        if (writer == null) return;
-
-        var text = formattedText ?? Encoding.UTF8.GetString(rawBytes.Span);
-        string line;
-
-        if (_format == LogFormat.TimestampedText)
+        finally
         {
-            var dirStr = direction == Direction.Rx ? "RX" : "TX";
-            line = $"[{ts.ToString("yyyy-MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture)}] [{dirStr}] {text}";
-        }
-        else if (_format == LogFormat.Csv)
-        {
-            var escaped = text.Replace("\"", "\"\"", StringComparison.Ordinal);
-            line = $"{ts.ToString("o", CultureInfo.InvariantCulture)},{direction},\"{escaped}\"";
-        }
-        else
-        {
-            line = text;
-        }
-
-        try
-        {
-            await writer.WriteLineAsync(line.AsMemory()).ConfigureAwait(false);
-            await writer.FlushAsync().ConfigureAwait(false);
-            Interlocked.Add(ref _bytesWritten, Encoding.UTF8.GetByteCount(line) + 2);
-        }
-        catch
-        {
-            // Ignore transient write errors
+            _writeGate.Release();
         }
     }
 
@@ -154,6 +165,7 @@ public class SessionLogger : ISessionLogger
         if (_disposed) return;
         _disposed = true;
         await StopAsync().ConfigureAwait(false);
+        _writeGate.Dispose();
         GC.SuppressFinalize(this);
     }
 }
